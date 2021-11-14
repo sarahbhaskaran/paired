@@ -4,6 +4,8 @@ import numpy as np
 from .vec_env import VecEnv, CloudpickleWrapper
 # PLATOON: just put clear_mpi_env_vars here since it is not in stable_baselines3
 # from stable_baselines3.common.vec_env import clear_mpi_env_vars
+import contextlib
+import os
 
 def worker(remote, parent_remote, env_fn_wrappers):
     def step(env, action):
@@ -213,6 +215,8 @@ def _flatten_list(l):
 
     return [l__ for l_ in l for l__ in l_]
 
+# PLATOON: copied this function from baselines
+@contextlib.contextmanager
 def clear_mpi_env_vars():
     removed_environment = {}
     for k, v in list(os.environ.items()):

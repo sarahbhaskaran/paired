@@ -193,7 +193,7 @@ class AdversarialRunner(object):
         elif env_name.startswith('MiniHack'):
             stats = self._get_env_stats_minihack(agent_info, adversary_agent_info)
         # PLATOON
-        elif env_name == 'platooning':
+        elif env_name.startswith('Platoon'):
             stats = {}
         else:
             raise ValueError(f'Unsupported environment, {self.args.env_name}')
