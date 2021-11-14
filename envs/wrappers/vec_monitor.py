@@ -1,5 +1,8 @@
 from .vec_env import VecEnvWrapper
-from baselines.bench.monitor import ResultsWriter
+# PLATOON: just put resultswriter code here since it's from an earlier version of stable baselines
+# from stable_baselines3.common.monitor import ResultsWriter
+# For ResultsWriter:
+from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import time
 from collections import deque
@@ -38,7 +41,7 @@ class VecMonitor(VecEnvWrapper):
         obs = self.venv.reset_random()
         self.eprets = np.zeros(self.num_envs, 'f')
         self.eplens = np.zeros(self.num_envs, 'i')
-        return obs    
+        return obs
 
     def step_wait(self):
         obs, rews, dones, infos = self.venv.step_wait()
@@ -66,3 +69,50 @@ class VecMonitor(VecEnvWrapper):
                 newinfos[i] = info
 
         return obs, rews, dones, newinfos
+
+class ResultsWriter:
+    """
+    A result writer that saves the data from the `Monitor` class
+
+    :param filename: the location to save a log file, can be None for no log
+    :param header: the header dictionary object of the saved csv
+    :param reset_keywords: the extra information to log, typically is composed of
+        ``reset_keywords`` and ``info_keywords``
+    """
+
+    def __init__(
+        self,
+        filename: str = "",
+        header: Optional[Dict[str, Union[float, str]]] = None,
+        extra_keys: Tuple[str, ...] = (),
+    ):
+        if header is None:
+            header = {}
+        if not filename.endswith(Monitor.EXT):
+            if os.path.isdir(filename):
+                filename = os.path.join(filename, Monitor.EXT)
+            else:
+                filename = filename + "." + Monitor.EXT
+        self.file_handler = open(filename, "wt")
+        self.file_handler.write("#%s\n" % json.dumps(header))
+        self.logger = csv.DictWriter(self.file_handler, fieldnames=("r", "l", "t") + extra_keys)
+        self.logger.writeheader()
+        self.file_handler.flush()
+
+
+    def write_row(self, epinfo: Dict[str, Union[float, int]]) -> None:
+        """
+        Close the file handler
+
+        :param epinfo: the information on episodic return, length, and time
+        """
+        if self.logger:
+            self.logger.writerow(epinfo)
+            self.file_handler.flush()
+
+
+    def close(self) -> None:
+        """
+        Close the file handler
+        """
+        self.file_handler.close()

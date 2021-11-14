@@ -9,8 +9,8 @@ from collections import defaultdict
 
 import numpy as np
 import torch
-from baselines.common.vec_env import DummyVecEnv
-from baselines.logger import HumanOutputFormat
+from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.logger import HumanOutputFormat
 from tqdm import tqdm
 
 import os
@@ -78,14 +78,14 @@ def parse_args():
 		type=str2bool, nargs='?', const=True, default=False,
 		help="When using a fixed env, whether the same environment should also be reused across workers.")
 	parser.add_argument(
-		'--seed', 
-		type=int, 
-		default=1, 
+		'--seed',
+		type=int,
+		default=1,
 		help='Random seed')
 	parser.add_argument(
-		'--max_seeds', 
-		type=int, 
-		default=None, 
+		'--max_seeds',
+		type=int,
+		default=None,
 		help='Random seed')
 	parser.add_argument(
 		'--num_processes',
@@ -150,7 +150,7 @@ class Evaluator(object):
 			kwargs['actions'] = NAVIGATE_ACTIONS
 			kwargs['observation_keys'] = ['glyphs', 'blstats']
 			kwargs['savedir'] = None
-		
+
 		return kwargs
 
 	@staticmethod
@@ -160,7 +160,7 @@ class Evaluator(object):
 
 		if is_minihack:
 			env_kwargs = Evaluator._get_default_env_kwargs(env_name)
-			env = minihack_gym_make(env_name, 
+			env = minihack_gym_make(env_name,
 					**Evaluator._get_default_env_kwargs(env_name))
 		else:
 			env = gym_make(env_name)
@@ -184,8 +184,8 @@ class Evaluator(object):
 			scale = None
 			obs_key = ['glyphs', 'blstats']
 
-		venv = VecMonitor(venv=venv, filename=None, keep_buf=100)	
-		venv = VecPreprocessImageWrapper(venv=venv, obs_key=obs_key, 
+		venv = VecMonitor(venv=venv, filename=None, keep_buf=100)
+		venv = VecPreprocessImageWrapper(venv=venv, obs_key=obs_key,
 			transpose_order=transpose_order, scale=scale, device=device)
 
 		return venv
@@ -207,9 +207,9 @@ class Evaluator(object):
 		for _, venv in self.venv.items():
 			venv.close()
 
-	def evaluate(self, 
-		agent, 
-		deterministic=False, 
+	def evaluate(self,
+		agent,
+		deterministic=False,
 		show_progress=False,
 		render=False,
 		accumulator='mean'):
@@ -218,7 +218,7 @@ class Evaluator(object):
 		venv = self.venv
 		env_returns = {}
 		env_solved_episodes = {}
-		
+
 		for env_name, venv in self.venv.items():
 			returns = []
 			solved_episodes = 0
@@ -266,8 +266,8 @@ class Evaluator(object):
 					venv.render_to_screen()
 
 			if pbar:
-				pbar.close()	
-	
+				pbar.close()
+
 			env_returns[env_name] = returns
 			env_solved_episodes[env_name] = solved_episodes
 
@@ -351,7 +351,7 @@ if __name__ == '__main__':
 
 		if os.path.exists(checkpoint_path):
 			print(f'Evaluating {xpid}')
-			meta_json_file = open(meta_json_path)       
+			meta_json_file = open(meta_json_path)
 			xpid_flags = DotDict(json.load(meta_json_file)['args'])
 
 			make_fn = [lambda: Evaluator.make_env(env_names[0])]
@@ -379,12 +379,12 @@ if __name__ == '__main__':
 				xpid_flags.update(args)
 				xpid_flags.update({"use_skip": False})
 
-				evaluator = Evaluator(env_names_, 
-					num_processes=args.num_processes, 
+				evaluator = Evaluator(env_names_,
+					num_processes=args.num_processes,
 					num_episodes=args.num_episodes)
 
-				stats = evaluator.evaluate(agent, 
-					deterministic=args.deterministic, 
+				stats = evaluator.evaluate(agent,
+					deterministic=args.deterministic,
 					show_progress=args.verbose,
 					render=args.render,
 					accumulator=args.accumulator)

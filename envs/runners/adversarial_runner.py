@@ -3,7 +3,7 @@ from collections import deque, defaultdict
 
 import numpy as np
 import torch
-from baselines.common.running_mean_std import RunningMeanStd
+from stable_baselines3.common.running_mean_std import RunningMeanStd
 
 from util import is_discrete_actions, get_obs_at_index, set_obs_at_index
 import re

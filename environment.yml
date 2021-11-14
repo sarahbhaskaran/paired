@@ -38,3 +38,8 @@ dependencies:
     - Box2D
     - pyglet<=1.5.0
     - pillow
+
+    # I add:
+    - minihack
+
+    # Then go into trajectory env and do pip install -e .

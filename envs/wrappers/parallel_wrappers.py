@@ -2,7 +2,8 @@ import multiprocessing as mp
 
 import numpy as np
 from .vec_env import VecEnv, CloudpickleWrapper
-from baselines.common.vec_env.vec_env import clear_mpi_env_vars
+# PLATOON: just put clear_mpi_env_vars here since it is not in stable_baselines3
+# from stable_baselines3.common.vec_env import clear_mpi_env_vars
 
 def worker(remote, parent_remote, env_fn_wrappers):
     def step(env, action):
@@ -11,7 +12,7 @@ def worker(remote, parent_remote, env_fn_wrappers):
         if done:
             ob = env.reset()
         return ob, reward, done, info
-        
+
     def step_env(env, action, reset_random=False):
         ob, reward, done, info = env.step(action)
 
@@ -212,6 +213,17 @@ def _flatten_list(l):
 
     return [l__ for l_ in l for l__ in l_]
 
+def clear_mpi_env_vars():
+    removed_environment = {}
+    for k, v in list(os.environ.items()):
+        for prefix in ['OMPI_', 'PMI_']:
+            if k.startswith(prefix):
+                removed_environment[k] = v
+                del os.environ[k]
+    try:
+        yield
+    finally:
+        os.environ.update(removed_environment)
 
 class ParallelAdversarialVecEnv(SubprocVecEnv):
     def __init__(self, env_fns, adversary=True, is_eval=False):
@@ -420,11 +432,11 @@ class ParallelAdversarialVecEnv(SubprocVecEnv):
     def get_shortest_path_length(self):
         return self.remote_attr('shortest_path_length', flatten=True)
 
-    # === Multigrid-specific === 
+    # === Multigrid-specific ===
     def get_num_blocks(self):
         return self.remote_attr('n_clutter_placed', flatten=True)
 
-    # ===  MiniHack-specific === 
+    # ===  MiniHack-specific ===
     def get_num_monsters(self):
         return self.remote_attr('n_monsters_placed', flatten=True)
 
@@ -486,4 +498,3 @@ class ParallelAdversarialVecEnv(SubprocVecEnv):
             return self.get_agent_pos()
         else:
             return self.__getattribute__(name)
-

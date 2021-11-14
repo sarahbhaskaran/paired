@@ -12,8 +12,8 @@ import matplotlib as mpl
 # mpl.use("macOSX")
 import matplotlib.pyplot as plt
 
-from baselines.common.vec_env import VecNormalize
-from baselines.logger import HumanOutputFormat
+from stable_baselines3.common.vec_env import VecNormalize
+from stable_baselines3.common.logger import HumanOutputFormat
 
 from envs.multigrid import *
 from envs.multigrid.adversarial import *
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     os.environ["OMP_NUM_THREADS"] = "1"
 
     args = parser.parse_args()
-    
+
     # === Configure logging ===
     if args.xpid is None:
         args.xpid = "lr-%s" % time.strftime("%Y%m%d-%H%M%S")
@@ -84,8 +84,8 @@ if __name__ == '__main__':
         agent=agent,
         venv=venv,
         ued_venv=ued_venv,
-        adversary_agent=adversary_agent, 
-        adversary_env=adversary_env, 
+        adversary_agent=adversary_agent,
+        adversary_env=adversary_env,
         train=True,
         device=device)
 
@@ -101,9 +101,9 @@ if __name__ == '__main__':
     def checkpoint(index=None):
         if args.disable_checkpoint:
             return
-        safe_checkpoint({'runner_state_dict': train_runner.state_dict()}, 
+        safe_checkpoint({'runner_state_dict': train_runner.state_dict()},
                         checkpoint_path,
-                        index=index, 
+                        index=index,
                         archive_interval=args.archive_interval)
         logging.info("Saved checkpoint to %s", checkpoint_path)
 
@@ -121,8 +121,8 @@ if __name__ == '__main__':
     if args.test_env_names:
         test_envs = args.test_env_names.split(',')
         evaluator = Evaluator(
-            test_envs, 
-            num_processes=args.test_num_processes, 
+            test_envs,
+            num_processes=args.test_num_processes,
             num_episodes=args.test_num_episodes,
             device=device)
 

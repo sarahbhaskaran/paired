@@ -1,43 +1,49 @@
 from .common import *
 
 from trajectory.setup.setup_env import setup_env
+from trajectory.setup.setup_exp import run_experiment
 
 class PlatoonAdversaryNet(DeviceAwareModule):
     def __init__(self, **kwargs):
-        trajectory_env = setup_env()
+        configs = setup_env()
+        algorithm, train_config, self.learn_config = run_experiment(configs)
+        # Algorithm is PPO or TD3
+        model = algorithm(train_config)
 
-        self.random = random
-        if isinstance(action_space, MultiDiscrete):
-            self.num_actions = list(action_space.nvec)
-            self.multi_dim = True
-            self.action_dim = len(self.num_actions)
-            self.num_action_logits = np.sum(list(self.num_actions))
-        else:
-            self.num_actions = action_space.n
-            self.multi_dim = False
-            self.action_dim = 1
-            self.num_action_logits = self.num_actions
+        # Stuff from multigrid_env
 
-        self.action_space = action_space
-
-
-        self.rnn = RNN(
-            input_size=self.preprocessed_input_size,
-            hidden_size=recurrent_hidden_size,
-            arch=recurrent_arch)
-        self.base_output_size = recurrent_hidden_size
-
-        self.actor = nn.Sequential(
-            make_fc_layers_with_hidden_sizes(actor_fc_layers, input_size=self.base_output_size),
-            Categorical(actor_fc_layers[-1], self.num_actions)
-        )
-
-        self.critic = nn.Sequential(
-            make_fc_layers_with_hidden_sizes(value_fc_layers, input_size=self.base_output_size),
-            init_(nn.Linear(value_fc_layers[-1], 1))
-        )
-
-        apply_init_(self.modules())
+        # self.random = random
+        # if isinstance(action_space, MultiDiscrete):
+        #     self.num_actions = list(action_space.nvec)
+        #     self.multi_dim = True
+        #     self.action_dim = len(self.num_actions)
+        #     self.num_action_logits = np.sum(list(self.num_actions))
+        # else:
+        #     self.num_actions = action_space.n
+        #     self.multi_dim = False
+        #     self.action_dim = 1
+        #     self.num_action_logits = self.num_actions
+        #
+        # self.action_space = action_space
+        #
+        #
+        # self.rnn = RNN(
+        #     input_size=self.preprocessed_input_size,
+        #     hidden_size=recurrent_hidden_size,
+        #     arch=recurrent_arch)
+        # self.base_output_size = recurrent_hidden_size
+        #
+        # self.actor = nn.Sequential(
+        #     make_fc_layers_with_hidden_sizes(actor_fc_layers, input_size=self.base_output_size),
+        #     Categorical(actor_fc_layers[-1], self.num_actions)
+        # )
+        #
+        # self.critic = nn.Sequential(
+        #     make_fc_layers_with_hidden_sizes(value_fc_layers, input_size=self.base_output_size),
+        #     init_(nn.Linear(value_fc_layers[-1], 1))
+        # )
+        #
+        # apply_init_(self.modules())
 
         self.train()
 
