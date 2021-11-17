@@ -2,7 +2,8 @@ from algos import PPO, RolloutStorage, ACAgent
 from models import \
     MultigridNetwork, \
     MiniHackAdversaryNetwork, \
-    NetHackAgentNet
+    NetHackAgentNet, \
+    PlatoonNet
 
 def model_for_multigrid_agent(
     env,
@@ -76,10 +77,10 @@ def model_for_minihack_agent(
 
 def model_for_platoon_agent(env, agent_type='agent'):
     if 'adversary_env' in agent_type:
-        model = PlatoonAdversaryNet()
+        model = PlatoonNet()
 
     else:
-        model = PlatoonAgentNet()
+        model = PlatoonNet()
 
     return model
 

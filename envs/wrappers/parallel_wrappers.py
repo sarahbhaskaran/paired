@@ -81,6 +81,7 @@ def worker(remote, parent_remote, env_fn_wrappers):
                 else:
                     remote.send([attr for attr in attrs])
             else:
+                print("the unimplemented command is", cmd)
                 raise NotImplementedError
     except KeyboardInterrupt:
         print('SubprocVecEnv worker: got KeyboardInterrupt')

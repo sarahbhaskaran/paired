@@ -111,6 +111,7 @@ def _make_env(args):
 def create_parallel_env(args, adversary=True):
     is_multigrid = args.env_name.startswith('MultiGrid')
     is_minihack = args.env_name.startswith('MiniHack')
+    is_platoon = args.env_name.startswith('Platoon')
 
     make_fn = lambda: _make_env(args)
 
@@ -129,10 +130,15 @@ def create_parallel_env(args, adversary=True):
     elif is_minihack:
         ued_venv = VecPreprocessImageWrapper(venv=venv)
 
-    venv = VecPreprocessImageWrapper(venv=venv, obs_key=obs_key, 
+    venv = VecPreprocessImageWrapper(venv=venv, obs_key=obs_key,
         transpose_order=transpose_order, scale=scale)
 
+
     if is_multigrid:
+        ued_venv = venv
+
+    # PLATOON 
+    elif is_platoon:
         ued_venv = venv
 
     if args.singleton_env:

@@ -3,7 +3,7 @@ from .common import *
 from trajectory.setup.setup_env import setup_env
 from trajectory.setup.setup_exp import run_experiment
 
-class PlatoonAdversaryNet(DeviceAwareModule):
+class PlatoonNet(DeviceAwareModule):
     def __init__(self, **kwargs):
         configs = setup_env()
         algorithm, train_config, self.learn_config = run_experiment(configs)
