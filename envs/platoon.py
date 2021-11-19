@@ -28,36 +28,6 @@ def register(env_id, entry_point, reward_threshold=0.95, max_episode_steps=None)
   # Register the environment with OpenAI gym
   gym_register(**kwargs)
 
-
-# class PlatoonEnv(gym.Env):
-#     def __init__(self, seed=0):
-#         trajectory_env = AdversarialTrajectoryEnv()
-#         self.action_space = self.trajectory_env.action_space
-#         self.observation_space = self.trajectory_env.observation_space
-#
-#     def reset(self):
-#         pass
-#
-#     def step_adversary(self, action):
-#         pass
-#
-#     def reset_agent(self):
-#         pass
-#
-#     def step(self, actions):
-#
-#         return state, reward, done, info
-#
-#     def __str__(self):
-#         pass
-
-
-# Copied from multigrid.py
-# if hasattr(__loader__, 'name'):
-#   module_path = __loader__.name
-# elif hasattr(__loader__, 'fullname'):
-#   module_path = __loader__.fullname
-
 module_path = 'trajectory.env.adversarial_trajectory_env'
 
 # TODO: change max_episode_steps if necessary

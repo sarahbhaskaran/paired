@@ -58,6 +58,7 @@ if __name__ == '__main__':
         print('Using CUDA\n')
 
     # === Create parallel envs ===
+    # PLATOON: maybe don't create parallel env yet because trajectory class will do it? Nah we'll let paired do it for now
     venv, ued_venv = create_parallel_env(args)
 
     is_training_env = args.ued_algo in ['minimax', 'paired', 'flexible_paired']
