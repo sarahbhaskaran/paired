@@ -1,4 +1,4 @@
-from algos import PPO, RolloutStorage, ACAgent
+from algos import PPO, RolloutStorage, ACAgent, PlatoonACAgent
 from models import \
     MultigridNetwork, \
     MiniHackAdversaryNetwork, \
@@ -77,7 +77,7 @@ def model_for_minihack_agent(
 
     return model
 
-def model_for_platoon_agent(env, agent_type='agent'):
+def platoon_agent(env, agent_type='agent'):
     # if 'adversary_env' in agent_type:
     #     adversary_observation_space = env.adversary_observation_space
     #     adversary_action_space = env.adversary_action_space
@@ -110,6 +110,7 @@ def model_for_platoon_agent(env, agent_type='agent'):
     # Algorithm is PPO or TD3. But actually for now avoid making it in here since it will try to wrap the environment
     train_config['monitor_wrapper'] = False
     model = algorithm(**train_config)
+    return PlatoonACAgent(algo=model, storage=None, learn_config=learn_config)
 
 
 def model_for_env_agent(
@@ -158,8 +159,8 @@ def model_for_env_agent(
 def make_agent(name, env, args, device='cpu'):
     if args.env_name.startswith('Platoon'):
         # TODO: how do we find agent_type?
-        algorithm = model_for_platoon_agent(env=env)
-        return ACAgent(algo=algorithm, storage=None) #somehow. trajectory-training-icra doesn't seem to have this at all
+        agent = platoon_agent(env=env)
+        return agent #somehow. trajectory-training-icra doesn't seem to have this at all
     # Create model instance
     is_adversary_env = 'env' in name
 
@@ -252,7 +253,8 @@ class PlatoonArgs:
 
         self.cp_frequency=10 #'A checkpoint of the model will be saved every {cp_frequency} iterations.' 'Set to None to not save no checkpoints during training.'     'Either way, a checkpoint will automatically be saved at the end of training.')
         self.eval_frequency=10 # 'An evaluation of the model will be done and saved to tensorboard every {eval_frequency} iterations.' 'Set to None to run no evaluations during training.' 'Either way, an evaluation will automatically be done at the start and at the end of training.')
-        self.no_eval=False# 'If set, no evaluation (ie. tensorboard plots) will be done.')
+        # TODO: this will need to be changed eventually in order to evaluate but fine without for now
+        self.no_eval=True# 'If set, no evaluation (ie. tensorboard plots) will be done.')
 
         # training params
         self.algorithm='PPO'#'RL algorithm to train with. Available options: PPO, TD3.')
