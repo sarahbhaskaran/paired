@@ -21,7 +21,7 @@ from envs.minihack.adversarial import *
 
 from envs.runners.adversarial_runner import AdversarialRunner
 from util import make_agent, FileWriter, safe_checkpoint, create_parallel_env
-from eval import Evaluator
+from eval import Evaluator, NonRecurrentEvaluator
 
 
 if __name__ == '__main__':
@@ -43,7 +43,8 @@ if __name__ == '__main__':
     def log_stats(stats):
         filewriter.log(stats)
         if args.verbose:
-            HumanOutputFormat(sys.stdout).writekvs(stats)
+            # Changed from .writekvs to .write because for some reason that's what's in the source code in stable_baselines3/common/logger.py now
+            HumanOutputFormat(sys.stdout).write(stats)
 
     if args.verbose:
         logging.getLogger().setLevel(logging.INFO)
@@ -121,11 +122,18 @@ if __name__ == '__main__':
     evaluator = None
     if args.test_env_names:
         test_envs = args.test_env_names.split(',')
-        evaluator = Evaluator(
-            test_envs,
-            num_processes=args.test_num_processes,
-            num_episodes=args.test_num_episodes,
-            device=device)
+        if (not args.recurrent_agent) and (not args.recurrent_adversary_env):
+            evaluator = NonRecurrentEvaluator(
+                test_envs,
+                num_processes=args.test_num_processes,
+                num_episodes=args.test_num_episodes,
+                device=device)
+        else:
+            evaluator = Evaluator(
+                test_envs,
+                num_processes=args.test_num_processes,
+                num_episodes=args.test_num_episodes,
+                device=device)
 
     # === Train ===
     update_start_time = timer()

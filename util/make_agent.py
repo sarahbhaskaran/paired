@@ -1,4 +1,4 @@
-from algos import PPO, RolloutStorage, ACAgent, PlatoonACAgent
+from algos import PPO, RolloutStorage, ACAgent, PlatoonACAgent, NonRecurrentRolloutStorage
 from models import \
     MultigridNetwork, \
     MiniHackAdversaryNetwork, \
@@ -6,6 +6,7 @@ from models import \
     PlatoonNet
 from trajectory.setup.setup_env import setup_env
 from trajectory.setup.setup_exp import run_experiment
+from trajectory.algos.ppo.policies import PopArtActorCriticPolicy
 
 def model_for_multigrid_agent(
     env,
@@ -107,10 +108,10 @@ def platoon_agent(env, agent_type='agent'):
     algorithm, train_config, learn_config = run_experiment(configs[0])
     # We made the env out here so set it in train_config
     train_config['env'] = env
-    # Algorithm is PPO or TD3. But actually for now avoid making it in here since it will try to wrap the environment
+    # Algorithm should actually be different for agent type
     train_config['monitor_wrapper'] = False
     model = algorithm(**train_config)
-    return PlatoonACAgent(algo=model, storage=None, learn_config=learn_config)
+    return PlatoonACAgent(algo=model, storage=None, learn_config=learn_config, agent_type=agent_type)
 
 
 def model_for_env_agent(
@@ -158,8 +159,43 @@ def model_for_env_agent(
 # PLATOON: Where is this called from?
 def make_agent(name, env, args, device='cpu'):
     if args.env_name.startswith('Platoon'):
-        # TODO: how do we find agent_type?
-        agent = platoon_agent(env=env)
+        # Agent storage added in just a bit!
+        agent = platoon_agent(env=env, agent_type=name)
+
+        storage = None
+        is_adversary_env = 'env' in name
+        if is_adversary_env:
+            observation_space = env.adversary_observation_space
+            action_space = env.adversary_action_space
+            num_steps = observation_space['time_step'].high[0]
+            entropy_coef = args.adv_entropy_coef
+            ppo_epoch = args.adv_ppo_epoch
+            num_mini_batch = args.adv_num_mini_batch
+            max_grad_norm = args.adv_max_grad_norm
+            use_popart = vars(args).get('adv_use_popart', False)
+        else:
+            observation_space = env.observation_space
+            action_space = env.action_space
+            num_steps = args.num_steps
+            entropy_coef = args.entropy_coef
+            ppo_epoch = args.ppo_epoch
+            num_mini_batch = args.num_mini_batch
+            max_grad_norm = args.max_grad_norm
+            use_popart = vars(args).get('use_popart', False)
+
+        use_proper_time_limits = \
+            env.get_max_episode_steps() is not None and vars(args).get('handle_timelimits', False)
+
+        storage = NonRecurrentRolloutStorage(
+            model=agent.algo,
+            num_steps=num_steps,
+            num_processes=args.num_processes,
+            observation_space=observation_space,
+            action_space=action_space,
+            use_proper_time_limits=use_proper_time_limits,
+            use_popart=use_popart
+        )
+        agent.storage = storage
         return agent #somehow. trajectory-training-icra doesn't seem to have this at all
     # Create model instance
     is_adversary_env = 'env' in name
@@ -248,6 +284,7 @@ class PlatoonArgs:
         self.s3 = False #'If set, experiment data will be uploaded to s3://trajectory.env/. ''AWS credentials must have been set in ~/.aws in order to use this.')
 
         self.iters = 800 # 'Number of iterations (rollouts) to train for.''Over the whole training, {iters} * {n_steps} * {n_envs} environment steps will be sampled.')
+        # TODO: should be much more than this for convergence
         self.n_steps=640 #'Number of environment steps to sample in each rollout in each environment.''This can span over less or more than the environment horizon.''Ideally should be a multiple of {batch_size}.')
         self.n_envs=1 #'Number of environments to run in parallel.')
 
@@ -263,7 +300,8 @@ class PlatoonArgs:
         self.network_depth=4#'Number of hidden layers to use for the policy and value function networks.''The networks will be composed of {network_depth} hidden layers of size {hidden_layer_size}.')
 
         self.lr=3e-4
-        self.batch_size=5120#'Minibatch size.')
+        # TODO: should be 5120 for convergence, I think
+        self.batch_size=64#'Minibatch size.')
         self.n_epochs=10#'Number of SGD iterations per training iteration.')
         self.gamma=0.99#'Discount factor.')
         self.gae_lambda=0.99#' Factor for trade-off of bias vs. variance for Generalized Advantage Estimator.')
@@ -283,3 +321,5 @@ class PlatoonArgs:
 
         self.env_platoon='av human*5'#'Platoon of vehicles following the leader. Can contain either "human"s or "av"s. ' '"(av human*2)*2" can be used as a shortcut for "av human human av human human". ' 'Vehicle tags can be passed with hashtags, eg "av#tag" "human#tag*3"')
         self.env_human_kwargs='{}'#'Dict of keyword arguments to pass to the IDM platoon cars controller.')
+
+        self.is_paired = True

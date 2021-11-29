@@ -38,7 +38,6 @@ class PPO():
             print('yup it does have optimizer')
             self.optimizer = actor_critic.optimizer
         else:
-            print(actor_critic)
             self.optimizer = optim.Adam(actor_critic.parameters(), lr=lr, eps=eps)
 
         self.log_grad_norm = log_grad_norm

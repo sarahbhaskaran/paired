@@ -25,7 +25,7 @@ from gym.envs.registration import make as minihack_gym_make
 from envs.multigrid.maze import *
 from envs.multigrid.crossing import *
 from envs.multigrid.fourrooms import *
-from envs.wrappers import VecMonitor, VecPreprocessImageWrapper, ParallelAdversarialVecEnv
+from envs.wrappers import VecMonitor, VecPreprocessImageWrapper, ParallelAdversarialVecEnv, VecPreprocessDictWrapper
 from util import DotDict, str2bool, make_agent, create_parallel_env
 from arguments import parser
 
@@ -171,6 +171,7 @@ class Evaluator(object):
 	def wrap_venv(venv, env_name, device='cpu'):
 		is_multigrid = env_name.startswith('MultiGrid') or env_name.startswith('MiniGrid')
 		is_minihack = env_name.startswith('MiniHack')
+		is_platoon = env_name.startswith('Platoon')
 
 		transpose_order = [2, 0, 1]
 		scale = 10.0
@@ -183,6 +184,11 @@ class Evaluator(object):
 			transpose_order = None
 			scale = None
 			obs_key = ['glyphs', 'blstats']
+		elif is_platoon:
+			# TODO: anything else about it
+			venv = VecMonitor(venv=venv, filename=None, keep_buf=100)
+			return VecPreprocessDictWrapper(venv=venv, obs_key='trajectory_obs', device=device)
+			# return venv
 
 		venv = VecMonitor(venv=venv, filename=None, keep_buf=100)
 		venv = VecPreprocessImageWrapper(venv=venv, obs_key=obs_key,
@@ -250,6 +256,76 @@ class Evaluator(object):
 					[[0.0] if done_ else [1.0] for done_ in done],
 					dtype=torch.float32,
 					device=self.device)
+
+				for i, info in enumerate(infos):
+					if 'episode' in info.keys():
+						returns.append(info['episode']['r'])
+						if returns[-1] > 0:
+							solved_episodes += 1
+						if pbar:
+							pbar.update(1)
+
+						if len(returns) >= self.num_episodes:
+							break
+
+				if render:
+					venv.render_to_screen()
+
+			if pbar:
+				pbar.close()
+
+			env_returns[env_name] = returns
+			env_solved_episodes[env_name] = solved_episodes
+
+		stats = {}
+		for env_name in self.env_names:
+			if accumulator == 'mean':
+				stats[f"solved_rate:{env_name}"] = env_solved_episodes[env_name]/self.num_episodes
+
+			if accumulator == 'mean':
+				stats[f"test_returns:{env_name}"] = np.mean(env_returns[env_name])
+			else:
+				stats[f"test_returns:{env_name}"] = env_returns[env_name]
+
+		return stats
+
+# PLATOON
+class NonRecurrentEvaluator(Evaluator):
+	def evaluate(self,
+		agent,
+		deterministic=False,
+		show_progress=False,
+		render=False,
+		accumulator='mean'):
+
+		# Evaluate agent for N episodes
+		venv = self.venv
+		env_returns = {}
+		env_solved_episodes = {}
+
+		for env_name, venv in self.venv.items():
+			returns = []
+			solved_episodes = 0
+
+			obs = venv.reset()
+
+			pbar = None
+			if show_progress:
+				print(f'Evaluating on {env_name}')
+				pbar = tqdm(total=self.num_episodes)
+
+			while len(returns) < self.num_episodes:
+				# Sample actions
+				# TODO: add whether deterministic
+				with torch.no_grad():
+					_, action, _ = agent.act(
+						obs)
+
+				# Observe reward and next obs
+				action = action.cpu()
+				action = agent.process_action(action)
+				obs, reward, done, infos = venv.step(action)
+
 
 				for i, info in enumerate(infos):
 					if 'episode' in info.keys():

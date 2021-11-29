@@ -57,6 +57,9 @@ class AdversarialRunner(object):
             'adversary_env': adversary_env,
         }
 
+        # PLATOON
+        self.non_recurrent = (not self.args.recurrent_agent) and (not self.args.recurrent_adversary_env)
+
         self.agent_rollout_steps = args.num_steps
         self.adversary_env_rollout_steps = self.venv.adversary_observation_space['time_step'].high[0]
 
@@ -229,8 +232,12 @@ class AdversarialRunner(object):
             with torch.no_grad():
                 obs_id = agent.storage.get_obs(step)
                 fwd_start =time.time()
-                value, action, action_log_dist, recurrent_hidden_states = agent.act(
-                    obs_id, agent.storage.get_recurrent_hidden_state(step), agent.storage.masks[step])
+                if self.non_recurrent:
+                    value, action, action_log_dist = agent.act(
+                        obs_id)
+                else:
+                    value, action, action_log_dist, recurrent_hidden_states = agent.act(
+                        obs_id, agent.storage.get_recurrent_hidden_state(step), agent.storage.masks[step])
 
                 if self.is_discrete_actions:
                     action_log_prob = action_log_dist.gather(-1, action)
@@ -281,11 +288,18 @@ class AdversarialRunner(object):
                 [[0.0] if 'cliffhanger' in info.keys() else [1.0]
                  for info in infos])
 
-            agent.insert(
-                obs, recurrent_hidden_states,
-                action, action_log_prob, action_log_dist,
-                value, reward, masks, bad_masks,
-                cliffhanger_masks=cliffhanger_masks)
+            if self.non_recurrent:
+                agent.insert(
+                    obs,
+                    action, action_log_prob, action_log_dist,
+                    value, reward, masks, bad_masks,
+                    cliffhanger_masks=cliffhanger_masks)
+            else:
+                agent.insert(
+                    obs, recurrent_hidden_states,
+                    action, action_log_prob, action_log_dist,
+                    value, reward, masks, bad_masks,
+                    cliffhanger_masks=cliffhanger_masks)
 
         rollout_info = self._get_rollout_return_stats(rollout_returns)
 
@@ -293,9 +307,14 @@ class AdversarialRunner(object):
         if not is_env and update:
             with torch.no_grad():
                 obs_id = agent.storage.get_obs(-1)
-                next_value = agent.get_value(
-                    obs_id, agent.storage.get_recurrent_hidden_state(-1),
-                    agent.storage.masks[-1]).detach()
+                if self.non_recurrent:
+                    # Took out masks stuff because i think it's unnecessary for non-rnn
+                    next_value = agent.get_value(
+                        obs_id).detach()
+                else:
+                    next_value = agent.get_value(
+                        obs_id, agent.storage.get_recurrent_hidden_state(-1),
+                        agent.storage.masks[-1]).detach()
 
             agent.storage.compute_returns(
                 next_value, args.use_gae, args.gamma, args.gae_lambda)
@@ -390,9 +409,14 @@ class AdversarialRunner(object):
         if self.is_training and self.is_training_env:
             with torch.no_grad():
                 obs_id = adversary_env.storage.get_obs(-1)
-                next_value = adversary_env.get_value(
-                    obs_id, adversary_env.storage.get_recurrent_hidden_state(-1),
-                    adversary_env.storage.masks[-1]).detach()
+                # PLATOON
+                if self.non_recurrent:
+                    next_value = adversary_env.get_value(
+                        obs_id).detach()
+                else:
+                    next_value = adversary_env.get_value(
+                        obs_id, adversary_env.storage.get_recurrent_hidden_state(-1),
+                        adversary_env.storage.masks[-1]).detach()
             adversary_env.storage.replace_final_return(env_return)
             adversary_env.storage.compute_returns(next_value, args.use_gae, args.gamma, args.gae_lambda)
             env_value_loss, env_action_loss, env_dist_entropy, info = adversary_env.update()

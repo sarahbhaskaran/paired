@@ -1,4 +1,4 @@
-from .obs_wrappers import VecPreprocessImageWrapper, AdversarialObservationWrapper
+from .obs_wrappers import VecPreprocessImageWrapper, AdversarialObservationWrapper, VecPreprocessDictWrapper
 from .parallel_wrappers import ParallelAdversarialVecEnv
 from .time_limit import TimeLimit
 from .vec_monitor import VecMonitor

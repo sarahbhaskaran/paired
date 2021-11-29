@@ -5,6 +5,7 @@ from trajectory.setup.setup_exp import run_experiment
 
 from gym.spaces import MultiDiscrete
 
+#  NOT USED ANYMORE--THIS LOGIC JUST HAPPENS IN MAKE_AGENT.PY
 
 class PlatoonNet(DeviceAwareModule):
     def __init__(self, observation_space, action_space, env, random=False, **kwargs):
