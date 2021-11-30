@@ -108,7 +108,7 @@ def platoon_agent(env, agent_type='agent'):
     algorithm, train_config, learn_config = run_experiment(configs[0])
     # We made the env out here so set it in train_config
     train_config['env'] = env
-    # Algorithm should actually be different for agent type
+    # Train config should maybe be different for different agent type
     train_config['monitor_wrapper'] = False
     model = algorithm(**train_config)
     return PlatoonACAgent(algo=model, storage=None, learn_config=learn_config, agent_type=agent_type)

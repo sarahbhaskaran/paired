@@ -309,6 +309,7 @@ class NonRecurrentEvaluator(Evaluator):
 
 			obs = venv.reset()
 
+
 			pbar = None
 			if show_progress:
 				print(f'Evaluating on {env_name}')
